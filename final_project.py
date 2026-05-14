@@ -785,7 +785,7 @@ left_col, right_col = st.columns([7, 3], gap="large")
 #         components.html(embed_code, height=930, scrolling=True)
 
 with left_col:
-    with st.container(border=True, height=1050):
+    with st.container(border=True, height=1200):
         st.markdown('<div class="section-title">Tableau 대시보드</div>', unsafe_allow_html=True)
 
         TABLEAU_URL = "https://prod-kr-a.online.tableau.com/t/joeunsol112-263e2c660a/views/10___cloud_/1_"
@@ -800,7 +800,6 @@ with left_col:
         </head>
         <body style="margin:0; padding:0;">
             <div style="font-size:14px; color:#1f6fa5; margin-bottom:8px;">
-                Tableau 로딩 테스트 중...
             </div>
 
             <tableau-viz
