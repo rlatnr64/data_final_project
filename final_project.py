@@ -3,6 +3,10 @@ import pandas as pd
 from google import genai
 import streamlit.components.v1 as components
 
+import jwt
+import datetime
+import uuid
+
 # =============================================================================
 # 페이지 기본 설정
 # =============================================================================
@@ -12,9 +16,28 @@ st.set_page_config(
 )
 
 # =============================================================================
-# Gemini 클라이언트 설정
+# Gemini, 태블로 클라이언트 설정
 # =============================================================================
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+def generate_tableau_jwt():
+    token = jwt.encode(
+        payload={
+            "iss": st.secrets["TABLEAU_CLIENT_ID"],
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=10),
+            "jti": str(uuid.uuid4()),
+            "aud": "tableau",
+            "sub": st.secrets["TABLEAU_USER_EMAIL"],
+            "scp": ["tableau:views:embed", "tableau:metrics:embed"]
+        },
+        key=st.secrets["TABLEAU_SECRET_VALUE"],
+        algorithm="HS256",
+        headers={
+            "kid": st.secrets["TABLEAU_SECRET_ID"],
+            "iss": st.secrets["TABLEAU_CLIENT_ID"]
+        }
+    )
+    return token
 
 @st.cache_data
 def load_summary_data():
@@ -734,42 +757,66 @@ st.markdown(
 # =============================================================================
 left_col, right_col = st.columns([7, 3], gap="large")
 
-# =============================================================================
-# 왼쪽: Tableau 영역
-# =============================================================================
+# # =============================================================================
+# # 왼쪽: Tableau 영역
+# # =============================================================================
+# with left_col:
+#     with st.container(border=True, height=1200):
+#         st.markdown('<div class="section-title">Tableau 대시보드</div>', unsafe_allow_html=True)
+
+#         TABLEAU_URL = "https://prod-kr-a.online.tableau.com/t/joeunsol112-263e2c660a/views/10___cloud_/1_"
+
+#         tableau_token = generate_tableau_jwt()
+
+#         embed_code = f"""
+#         <script type="module" src="https://prod-kr-a.online.tableau.com/javascripts/api/tableau.embedding.3.latest.min.js"></script>
+
+#         <tableau-viz
+#             id="tableauViz"
+#             src="{TABLEAU_URL}"
+#             token="{tableau_token}"
+#             width="100%"
+#             height="900"
+#             toolbar="bottom"
+#             hide-tabs>
+#         </tableau-viz>
+#         """
+
+#         components.html(embed_code, height=930, scrolling=True)
+
 with left_col:
-    with st.container(border=True, height=1160):
+    with st.container(border=True, height=1050):
         st.markdown('<div class="section-title">Tableau 대시보드</div>', unsafe_allow_html=True)
 
-        TABLEAU_URL = "https://prod-kr-a.online.tableau.com/t/joeunsol112-263e2c660a/views/10___cloud_/1_?:origin=card_share_link&:embed=y"
+        TABLEAU_URL = "https://prod-kr-a.online.tableau.com/t/joeunsol112-263e2c660a/views/10___cloud_/1_"
 
-        if TABLEAU_URL:
-            components.iframe(
-                src=TABLEAU_URL,
-                width=1200,
-                height=900,
-                scrolling=True
-            )
-        else:
-            st.markdown(
-                """
-                <div class="tableau-placeholder">
-                    태블로 대시보드
-                    <span>Tableau 링크 연결 후 이 영역에 실제 대시보드가 표시됩니다.</span>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        tableau_token = generate_tableau_jwt()
 
-            st.markdown(
-                """
-                <div class="tableau-info">
-                    Tableau 링크가 연결되면 이 영역에 실제 대시보드가 표시됩니다.
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        embed_code = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script type="module" src="https://prod-kr-a.online.tableau.com/javascripts/api/tableau.embedding.3.latest.min.js"></script>
+        </head>
+        <body style="margin:0; padding:0;">
+            <div style="font-size:14px; color:#1f6fa5; margin-bottom:8px;">
+                Tableau 로딩 테스트 중...
+            </div>
 
+            <tableau-viz
+                id="tableauViz"
+                src="{TABLEAU_URL}"
+                token="{tableau_token}"
+                width="1100"
+                height="850"
+                toolbar="bottom"
+                hide-tabs>
+            </tableau-viz>
+        </body>
+        </html>
+        """
+
+        components.html(embed_code, height=900, scrolling=True)
         st.markdown('<div class="expected-title">대시보드 구성</div>', unsafe_allow_html=True)
 
         st.markdown(
